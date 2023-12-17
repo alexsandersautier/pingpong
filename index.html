@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Pong</title>
+    <link rel="icon" href="icons8-pingue-pongue-50.png">
+    <style>
+        * {
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas></canvas>
+    <script>
+        const canvasElem = document.querySelector("canvas"),
+            canvasCtx = canvasElem.getContext("2d")
+        const lineWidth = 15
+
+        const mouse = { x: 0, y: 0 }
+
+        const field = {
+            w: window.innerWidth,
+            h: window.innerHeight,
+            draw: function () {
+                canvasCtx.fillStyle = "#000099"
+                canvasCtx.fillRect(0, 0, this.w, this.h)
+            },
+        }
+
+        const line = {
+            x: field.w / 2 - lineWidth / 2,
+            y: 0,
+            draw: function () {
+                canvasCtx.fillStyle = '#fff'
+                createObject(this.x, this.y, lineWidth, field.h)
+            }
+        }
+
+        const racketleft = {
+            w: lineWidth,
+            h: 200,
+            x: 10,
+            y: field.h / 3,
+            computer: false,
+            _move: function () {
+                this.y = mouse.y - this.y / 2
+            },
+            draw: function () {
+                createObject(this.x, this.y, this.w, this.h)
+                if (!this.computer) {
+                    this._move()
+                }
+            }
+        }
+
+        const racketRight = {
+            w: 0,
+            h: 0,
+            y: field.h / 3,
+            speed: 5,
+            _speedUp: function(){
+                this.speed+=3
+            },
+            computer: true,
+            _move: function () {
+                if(this.y + this.h / 2 < ball.y + ball.r){
+                    this.y += this.speed
+                }else{
+                    this.y -= this.speed
+                }
+            },
+            draw: function (x, y, w, h) {
+                createObject(x, this.y, w, h)
+                if (this.computer) {
+                    this._move()
+                }
+            }
+        }
+
+        const ball = {
+            x: 200,
+            y: 300,
+            r: 20,
+            start: 0,
+            end: 2 * Math.PI,
+            speed: 10,
+            directionX: 1,
+            directionY: 1,
+            _calcPosition: function () {
+                if (this.x > field.w - this.r - lineWidth - 10) {
+                    if (
+                        this.y + this.r > racketRight.y &&
+                        this.y - this.r < racketRight.y + racketRight.h
+                    ) {
+                        this.directionX *= -1
+                    } else {
+                        score.incrementHuman()
+                        this._pointUp()
+                    }
+
+                }
+                if (this.x < this.r + racketleft.w + 10) {
+                    if (
+                        this.y + this.r > racketleft.y &&
+                        this.y - this.r < racketleft.y + racketleft.h
+                    ) {
+                        this.directionX *= -1;
+                    } else {
+                        score.incrementComputer();
+                        this._pointUp();
+                    }
+                }
+
+                if (
+                    (this.y - this.r < 0 && this.directionY < 0) ||
+                    (this.y > field.h - this.r && this.directionY > 0)
+                ) {
+                    this.directionY *= -1
+                }
+            },
+            _speedUp: function(){
+                this.speed += 3
+            },
+            _pointUp: function () {
+                this._speedUp()
+                racketRight._speedUp()
+                this.x = field.w / 2
+                this.y = field.h / 2
+            },
+            _move: function () {
+                this.x += this.directionX * this.speed
+                this.y += this.directionY * this.speed
+            },
+            draw: function () {
+                canvasCtx.beginPath()
+                canvasCtx.arc(this.x, this.y, this.r, this.start, this.end, false)
+                canvasCtx.fill()
+                this._calcPosition()
+                this._move()
+            }
+        }
+
+        const score = {
+            human: 0,
+            computer: 0,
+            incrementHuman: function () {
+                this.human++
+            },
+            incrementComputer: function () {
+                this.computer++
+            },
+            draw: function () {
+                canvasCtx.font = "bold 72px arial"
+                canvasCtx.textAlign = "center"
+                canvasCtx.textBaseline = 'top'
+                canvasCtx.fillStyle = "#000044"
+                canvasCtx.fillText(`${this.human}`, field.w / 4, 50)
+                canvasCtx.fillText(`${this.computer}`, field.w / 4 * 3, 50)
+            }
+        }
+
+        function setup() {
+            canvasElem.width = canvasCtx.width = field.w
+            canvasElem.height = canvasCtx.height = field.h
+        }
+
+        function createObject(x, y, w, h) {
+            canvasCtx.fillRect(x, y, w, h)
+        }
+
+        function draw() {
+            field.draw()
+
+            //central net
+            line.draw()
+
+            //racket left
+            racketleft.draw()
+
+            //racket right
+            racketRight.draw(field.w - lineWidth - 10, field.h / 3, lineWidth, field.h / 3.5)
+            //ball
+            ball.draw()
+
+            //score board
+            score.draw()
+        }
+
+        window.animateFrame = (function () {
+            return (
+                window.requestAnimationFrame ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                window.oRequestAnimationFrame ||
+                window.msRequestAnimationFrame ||
+                function (callback) {
+                    return window.setTimeout(callback, 1000 / 60)
+                }
+            )
+        })()
+
+        function main() {
+            animateFrame(main)
+            draw()
+        }
+
+        setup()
+        main()
+
+        canvasElem.addEventListener("mousemove", function (e) {
+            mouse.x = e.pageX
+            mouse.y = e.pageY
+        })
+    </script>
+</body>
+
+</html>
